@@ -1,136 +1,111 @@
 <?php
 
-// Start the session
 session_start();
 
-// Get the submitted values
-$name = $_POST['name'] ?? '';
-$email = $_POST['email'] ?? '';
-$year_level = $_POST['year_level'] ?? '';
+// This page accepts data only from the form's POST submission.
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
 
+    $errors = [
+        'Please submit the form from the first page.',
+    ];
+} else {
+    $name = trim((string) ($_POST['name'] ?? ''));
+    $email = trim((string) ($_POST['email'] ?? ''));
+    $yearLevel = trim((string) ($_POST['year_level'] ?? ''));
 
-// Check if required fields are empty
-if (
-    empty($name) ||
-    empty($email) ||
-    empty($year_level)
-) {
+    $allowedYearLevels = [
+        '1st Year',
+        '2nd Year',
+        '3rd Year',
+        '4th Year',
+    ];
 
-    echo "<h2>Validation Error</h2>";
+    $errors = [];
 
-    echo "<p>Please fill in all required fields.</p>";
+    if ($name === '') {
+        $errors[] = 'Name is required.';
+    }
 
-    echo "<a href='index.html'>Go Back to Form</a>";
+    if ($email === '') {
+        $errors[] = 'Email is required.';
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $errors[] = 'Please enter a valid email address.';
+    }
 
-    exit;
+    if (!in_array($yearLevel, $allowedYearLevels, true)) {
+        $errors[] = 'Please select a valid year level.';
+    }
+
+    if ($errors === []) {
+        // Associative array required by the activity.
+        $student = [
+            'Name' => $name,
+            'Email' => $email,
+            'Year Level' => $yearLevel,
+        ];
+
+        // Store a submitted value explicitly, as required by the activity.
+        $_SESSION['name'] = $name;
+
+        // Keep the complete record available for possible future use.
+        $_SESSION['student'] = $student;
+    }
 }
-
-
-// Store information in a PHP array
-$student = [
-
-    "Name" => $name,
-
-    "Email" => $email,
-
-    "Year Level" => $year_level
-
-];
-
-
-// Store the name in the session
-$_SESSION['name'] = $name;
-
 ?>
-
 <!DOCTYPE html>
-
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
+    <title>
+        <?= $errors === [] ? 'Processing Result' : 'Validation Error' ?>
+    </title>
 
-    <title>Processing Result</title>
-
-    <style>
-
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f2f2f2;
-            padding: 40px;
-        }
-
-        .container {
-            max-width: 600px;
-            margin: auto;
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px #ccc;
-        }
-
-        .success {
-            color: green;
-        }
-
-        li {
-            margin: 10px 0;
-        }
-
-        a {
-            display: inline-block;
-            margin-top: 15px;
-        }
-
-    </style>
-
+    <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
+    <main class="container">
+        <p class="eyebrow">FORM PROCESSING</p>
+        <?php if ($errors !== []): ?>
+            <h1 class="error">Validation Error</h1>
 
-<div class="container">
+            <p>
+                Submission was not saved. Please correct the following:
+            </p>
 
-    <h1 class="success">
-        Form Submitted Successfully!
-    </h1>
+            <ul>
+                <?php foreach ($errors as $error): ?>
+                    <li>
+                        <?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
 
-    <h2>
-        Submitted Information
-    </h2>
+            <a class="button-link secondary" href="index.html">Back to Form</a>
+        <?php else: ?>
+            <h1 class="submission-success">Form Submitted Successfully!</h1>
 
-    <ul>
+            <h2>Submitted Information</h2>
 
-        <?php
+            <ul>
+                <?php foreach ($student as $key => $value): ?>
+                    <li>
+                        <strong>
+                            <?= htmlspecialchars($key, ENT_QUOTES, 'UTF-8') ?>:
+                        </strong>
 
-        // Display the array using foreach
-        foreach ($student as $key => $value) {
+                        <?= htmlspecialchars($value, ENT_QUOTES, 'UTF-8') ?>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
 
-            echo "<li>";
+            <p>Your information has been stored in the session.</p>
 
-            echo "<strong>$key:</strong> $value";
-
-            echo "</li>";
-
-        }
-
-        ?>
-
-    </ul>
-
-    <p>
-        Your information has been stored in the session.
-    </p>
-
-    <a href="second.php">
-        Go to Second Page
-    </a>
-
-</div>
-
+            <a class="button-link" href="second.php">Go to Second Page</a>
+        <?php endif; ?>
+    </main>
 </body>
-
 </html>
